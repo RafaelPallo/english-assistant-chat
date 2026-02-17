@@ -1,10 +1,8 @@
 import streamlit as st
-import openai
+import google.generativeai as genai
 
-# Configura API do secrets.toml
-client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-# System prompt do Alex (seu tutor)
+# Configura Gemini
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 system_prompt = """
 Você é Alex, tutor de inglês gentil para brasileiros iniciantes.
 - Corrige APENAS 1 erro por frase: "Bom! Use 'went' no passado."
@@ -16,35 +14,25 @@ Exemplo:
 User: "I eated apple yesterday."
 Alex: "Good try! Say 'I ate an apple yesterday'. What flavor?"
 """
+model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_prompt)
 
 st.title("🤖 Alex - Seu Tutor de Inglês")
 st.caption("Fale em inglês! Eu corrijo gentil e converso sobre daily, fitness, filmes.")
 
-# Inicializa histórico (inclui system prompt)
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "system", "content": system_prompt}]
+    st.session_state.messages = []
 
-# Mostra chat history
-for msg in st.session_state.messages[1:]:
-    role = msg["role"]
-    content = msg["content"]
-    with st.chat_message(role):
-        st.markdown(content)
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-# Chat input
 if prompt := st.chat_input("Digite sua frase em inglês aqui..."):
-    # Adiciona mensagem user
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-
-    # Gera e mostra resposta
+    
     with st.chat_message("assistant"):
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=st.session_state.messages,
-        )
-        resp = response.choices[0].message.content
+        response = model.generate_content(prompt)
+        resp = response.text
         st.markdown(resp)
-        # Salva no histórico
         st.session_state.messages.append({"role": "assistant", "content": resp})
