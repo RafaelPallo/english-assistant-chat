@@ -39,10 +39,16 @@ if not available:
     st.error("Nenhum modelo text disponível. Use OpenAI.")
     st.stop()
 
-# Usa PRIMEIRO modelo (funciona sempre)
-model_name = available[0]
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+# Direto pro melhor modelo (sem lista debug)
+model_name = "models/gemini-2.5-flash"  # Seu top da key
 model = genai.GenerativeModel(model_name)
-st.success(f"✅ Usando: {model_name}")
+
+# Sidebar info discreta (opcional, pro seu debug)
+with st.sidebar:
+    st.caption(f"🤖 {model_name}")
+
 
 prompt_system = """
 Você é Alex, tutor inglês gentil brasileiros.
