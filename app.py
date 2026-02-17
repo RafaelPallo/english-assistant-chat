@@ -12,7 +12,10 @@ st.markdown("""
 .main {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem;}
 .chat-user {background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 20px; padding: 1rem; margin: 0.5rem 0;}
 .chat-assist {background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); color: black; border-radius: 20px; padding: 1rem; margin: 0.5rem 0;}
-.header {font-family: 'Georgia'; font-size
+.header {font-family: 'Georgia'; font-size: 3rem; color: white; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);}
+</style>
+""")
+
 
 
 st.title("🤖 Alex - Tutor Inglês")
