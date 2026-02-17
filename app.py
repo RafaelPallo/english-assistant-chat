@@ -9,12 +9,19 @@ st.set_page_config(
 # CSS PRO
 st.markdown("""
 <style>
-.main {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem;}
-.chat-user {background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 20px; padding: 1rem; margin: 0.5rem 0;}
-.chat-assist {background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); color: black; border-radius: 20px; padding: 1rem; margin: 0.5rem 0;}
-.header {font-family: 'Georgia'; font-size: 3rem; color: white; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);}
+/* Fundo principal */
+section[data-testid="stAppViewContainer"] {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);}
+.stApp {background: transparent !important;}
+/* Bubbles chat */
+div[data-testid="stHorizontalBlock"] > div > div {border-radius: 20px; padding: 1rem; margin: 0.5rem 0;}
+/* User */
+.st-md a[href]:nth-of-type(1) {background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%) !important; color: white;}
+/* Assist */
+.st-md a[href]:nth-of-type(2) {background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%) !important; color: black;}
+/* Header */
+h1 {font-family: 'Georgia'; font-size: 3rem; color: white; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);}
 </style>
-""")
+""", unsafe_allow_html=True)
 
 
 
