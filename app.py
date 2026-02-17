@@ -1,10 +1,12 @@
 import streamlit as st
-import google.genai as genai  # ← NOVA LIB (fix deprecated)
+import google.generativeai as genai  # Versão 0.7.2 OK
 
 st.title("🤖 Alex - Tutor Inglês")
 st.caption("Fale inglês! Corrijo erros (daily, fitness, filmes).")
 
+# Config com versão antiga
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-pro')  # Seguro sempre
 
 prompt_system = """
 Você é Alex, tutor inglês gentil brasileiros.
@@ -26,12 +28,11 @@ if user_input := st.chat_input("Ex: 'I go gym yesterday'..."):
     st.session_state.messages.append({"role": "user", "content": user_input})
     st.chat_message("user").markdown(user_input)
     
-    full_prompt = prompt_system + "\nHistórico:\n"
-    for m in st.session_state.messages:
+    full_prompt = prompt_system + "\nHistórico recente:\n"
+    for m in st.session_state.messages[-4:]:  # Últimas 4 msgs
         full_prompt += f"{m['role']}: {m['content']}\n"
-    full_prompt += f"User: {user_input}\nAlex: "
+    full_prompt += "Alex: "
     
-    model = genai.GenerativeModel('gemini-1.5-flash-exp')
     resp = model.generate_content(full_prompt).text
     st.chat_message("assistant").markdown(resp)
     st.session_state.messages.append({"role": "assistant", "content": resp})
