@@ -26,7 +26,6 @@ h1 {font-family: 'Georgia'; font-size: 3rem; color: white; text-align: center; t
 
 
 st.title("🤖 Alex - Tutor Inglês")
-st.caption("Testando modelos...")
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
