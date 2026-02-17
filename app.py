@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 
-# Seu system prompt PRIMEIRO
 system_prompt = """
 Você é Alex, tutor de inglês gentil para brasileiros iniciantes.
 - Corrige APENAS 1 erro por frase: "Bom! Use 'went' no passado."
@@ -14,17 +13,18 @@ User: "I eated apple yesterday."
 Alex: "Good try! Say 'I ate an apple yesterday'. What flavor?"
 """
 
-# Configura Gemini DEPOIS do prompt
+# Testa conexão e lista modelos
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash-exp', system_instruction=system_prompt)
-    st.success("✅ Gemini conectado! Alex pronto.")
+    models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    st.success(f"✅ Conectado! Modelos disponíveis: {len(models)}")
+    model = genai.GenerativeModel('gemini-1.5-flash')  # Seguro, funciona sempre
 except Exception as e:
-    st.error(f"❌ Erro conexão: {str(e)}")
+    st.error(f"❌ Erro: {str(e)}")
     st.stop()
 
 st.title("🤖 Alex - Seu Tutor de Inglês")
-st.caption("Fale em inglês! Corrijo erros e converso daily, fitness, filmes.")
+st.caption("Fale inglês! Corrijo gentil (daily, fitness, filmes).")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -33,15 +33,12 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-if prompt := st.chat_input("Digite aqui (ex: 'I go gym yesterday')..."):
+if prompt := st.chat_input("Ex: 'I go gym yesterday'..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"): st.markdown(prompt)
     
     with st.chat_message("assistant"):
-        try:
-            response = model.generate_content(prompt)
-            resp = response.text
-            st.markdown(resp)
-            st.session_state.messages.append({"role": "assistant", "content": resp})
-        except Exception as e:
-            st.error(f"Erro resposta: {str(e)}")
+        response = model.generate_content(prompt, stream=False)
+        resp = response.text
+        st.markdown(resp)
+        st.session_state.messages.append({"role": "assistant", "content": resp})
