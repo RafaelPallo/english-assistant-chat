@@ -2,7 +2,7 @@
 
 ## 🚀 **Sobre**
 **Alex** corrige seu inglês **gentilmente** em tempo real! Fala sobre daily life, fitness, filmes ou amor.  
-**Grátis forever** via Gemini API. Perfeito pra FATEC, bootcamps e internships TI.
+**Grátis** via Gemini API.
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Gemini](https://img.shields.io/badge/Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com)
@@ -39,8 +39,8 @@ graph TD
 
 ## 🚀 **Setup Local**
 ```bash
-git clone https://github.com/SEUUSUARIO/alex-tutor-ingles
-cd alex-tutor-ingles
+git clone https://github.com/RafaelPallo/english-assistant-chat/
+cd english-assistant-chat
 
 # API Key GRÁTIS: https://aistudio.google.com/app/apikey
 
