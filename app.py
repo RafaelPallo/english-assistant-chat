@@ -1,12 +1,10 @@
 import streamlit as st
 import google.generativeai as genai
+import time
 
-st.set_page_config(
-    page_title="Alex Tutor", page_icon="🎓", layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Alex Tutor", page_icon="🎓", layout="wide", initial_sidebar_state="expanded")
 
-# CSS ESCURO (mantido)
+# CSS (mantido igual)
 st.markdown("""
 <style>
 section[data-testid="stAppViewContainer"] {background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%) !important;}
@@ -21,104 +19,89 @@ h1 {font-family: 'Georgia'; font-size: 3rem; color: #e0e7ff !important; text-ali
 
 st.title("🤖 Alex - Tutor Inglês")
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model_name = "models/gemini-2.5-flash"
-model = genai.GenerativeModel(model_name)
+try:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    model = genai.GenerativeModel("models/gemini-2.5-flash-exp")  # Modelo LEVE, quota maior
+except:
+    st.error("❌ **GEMINI_API_KEY** não encontrada em secrets.toml. Adicione no Streamlit Cloud > Settings > Secrets.")
+    st.stop()
 
 # Sidebar
 with st.sidebar:
-    st.caption(f"🤖 {model_name}")
+    st.caption("🤖 gemini-2.5-flash-exp")
     if st.button("🆕 New Chat", use_container_width=True, type="primary"):
-        st.session_state.messages = []
-        st.session_state.level = None
-        st.session_state.motivo = None
+        for key in ["messages", "level", "motivo"]:
+            st.session_state[key] = None if key != "messages" else []
         st.rerun()
 
-# Inicializa session_state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "level" not in st.session_state:
-    st.session_state.level = None
-if "motivo" not in st.session_state:
-    st.session_state.motivo = None
+# Session state
+for key in ["messages", "level", "motivo"]:
+    if key not in st.session_state:
+        st.session_state[key] = [] if key == "messages" else None
 
-# PASSO 1: ESCOLHER NÍVEL
+# PASSO 1: NÍVEL
 if st.session_state.level is None:
-    st.markdown("### 👋 **Passo 1:** Escolha seu nível de Inglês!")
+    st.markdown("### 👋 **Passo 1:** Escolha seu nível!")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🥚 **Pré-iniciante (A1)**", use_container_width=True):
-            st.session_state.level = "A1"
-            st.rerun()
-        if st.button("🚀 **Iniciante (A2)**", use_container_width=True):
-            st.session_state.level = "A2"
-            st.rerun()
+        if st.button("🥚 Pré-iniciante (A1)"): st.session_state.level = "A1"; st.rerun()
+        if st.button("🚀 Iniciante (A2)"): st.session_state.level = "A2"; st.rerun()
     with col2:
-        if st.button("⭐ **Intermediário (B1-B2)**", use_container_width=True):
-            st.session_state.level = "B1-B2"
-            st.rerun()
-        if st.button("🔥 **Avançado (C1-C2)**", use_container_width=True):
-            st.session_state.level = "C1-C2"
-            st.rerun()
+        if st.button("⭐ Intermediário (B1-B2)"): st.session_state.level = "B1-B2"; st.rerun()
+        if st.button("🔥 Avançado (C1-C2)"): st.session_state.level = "C1-C2"; st.rerun()
     st.stop()
 
-# PASSO 2: ESCOLHER MOTIVO
+# PASSO 2: MOTIVO
 if st.session_state.motivo is None:
-    st.markdown(f"### 🎯 **Passo 2:** Qual seu principal motivo para aprender inglês?")
-    motivos = [
-        "Fins acadêmicos, universidade e educação",
-        "Viagens e turismo",
-        "Emprego e carreira",
-        "Imigração e vida no exterior",
-        "Melhorar comunicação com amigos",
-        "Testes e certificados de idiomas",
-        "Outro"
-    ]
+    st.markdown(f"### 🎯 **Passo 2:** Seu motivo?")
+    motivos = ["Fins acadêmicos", "Viagens e turismo", "Emprego e carreira", "Imigração", "Amigos", "Testes/certificados", "Outro"]
     col1, col2, col3 = st.columns(3)
-    cols = [col1, col2, col3]
-    for i, motivo in enumerate(motivos):
-        with cols[i % 3]:
-            if st.button(f"📌 **{motivo[:30]}...**", use_container_width=True):
-                st.session_state.motivo = motivo
-                st.rerun()
+    for i, m in enumerate(motivos):
+        col = [col1, col2, col3][i%3]
+        if col.button(f"📌 {m}"): st.session_state.motivo = m; st.rerun()
     st.stop()
 
-# MOSTRA CONFIGURAÇÕES
-st.sidebar.success(f"✅ **Nível:** {st.session_state.level}")
-st.sidebar.success(f"🎯 **Motivo:** {st.session_state.motivo}")
+st.sidebar.success(f"✅ Nível: **{st.session_state.level}**")
+st.sidebar.success(f"🎯 Motivo: **{st.session_state.motivo}**")
 
-# Prompt adaptado: NÍVEL + MOTIVO
-level_prompts = {
-    "A1": "Use ONLY basic words related to {motivo}. 1-word answers.",
-    "A2": "Simple sentences about {motivo}. Correct 1 basic error.",
-    "B1-B2": "Medium sentences focused on {motivo}. Vary topics inside it.",
-    "C1-C2": "Advanced discussion ONLY on {motivo}. Challenge vocabulary/grammar."
-}
+# FUNÇÃO GENERATE COM RETRY e LIMITE (fixa ResourceExhausted)
+@st.cache_data
+def generate_response(_prompt):
+    for tentativa in range(3):  # 3 tentativas
+        try:
+            # Encurta prompt pra <1000 tokens
+            short_prompt = _prompt[:2000]  # Limite seguro
+            resp = model.generate_content(
+                short_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=150,  # Resposta curta, menos quota
+                    temperature=0.7
+                )
+            )
+            return resp.text
+        except Exception as e:
+            if "ResourceExhausted" in str(e) or tentativa == 2:
+                return f"😅 Quota Gemini esgotada (tente em 1h). Exemplo {st.session_state.level}: 'Good! Say ...' about {st.session_state.motivo}."
+            time.sleep(2 ** tentativa)  # Backoff 1s, 2s, 4s
+    return "Erro de API. Tente New Chat."
 
-motivo_key = st.session_state.motivo.lower().replace(" ", "_").replace(",", "").replace("é", "e")
-prompt_system = f"""
-Você é Alex, tutor inglês gentil para brasileiros.
-Nível: {st.session_state.level} - {level_prompts[st.session_state.level].format(motivo=st.session_state.motivo)}
-FALE APENAS SOBRE '{st.session_state.motivo}' - conecte TODAS respostas a este tema.
-- Corrige APENAS 1 erro gramatical/vocab por resposta.
-- Inglês adaptado ao nível, 1-2 frases curtas.
-- Incentive: "Try again?", "What else about {motivo_key}?", "Tell me more!", "Good job! Next?", "Practice that?".
-- SEM emojis, português, repetição ou sair do tema.
-Ex: User (Viagens A1): "hotel". Alex: "Good! Hotel is place to sleep. What color?"
-"""
+# Prompt otimizado (curto)
+level_prompts = {"A1": "Basic words on {motivo}", "A2": "Simple sentences {motivo}", "B1-B2": "Medium {motivo}", "C1-C2": "Advanced {motivo}"}
+prompt_system = f"""Alex tutor nível {st.session_state.level}: {level_prompts[st.session_state.level].format(motivo=st.session_state.motivo)}.
+Fale SÓ sobre {st.session_state.motivo}. Corrija 1 erro. Incentive: 'Tell more?'."""
 
-# Chat liberado
+# Chat
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).markdown(msg["content"])
 
-if user_input := st.chat_input("Fale sobre seu motivo em inglês!"):
+if user_input := st.chat_input("Fale sobre seu motivo!"):
     st.session_state.messages.append({"role": "user", "content": user_input})
     st.chat_message("user").markdown(user_input)
     
-    full_prompt = prompt_system + f"\nUser: {user_input}\nAlex: "
+    full_prompt = prompt_system + f"\nUser: {user_input}\nAlex:"
     
     with st.chat_message("assistant"):
-        with st.spinner("Alex focando no seu motivo..."):
-            resp = model.generate_content(full_prompt).text
+        with st.spinner("Alex pensando..."):
+            resp = generate_response(full_prompt)
             st.markdown(resp)
     st.session_state.messages.append({"role": "assistant", "content": resp})
