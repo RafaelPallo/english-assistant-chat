@@ -43,7 +43,7 @@ section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f0f23 0
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🤖 Alex - Tutor Inglês")
+st.title("Alex - Tutor Inglês")
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model_name = "models/gemini-2.5-flash"
