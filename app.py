@@ -54,7 +54,7 @@ if st.session_state.level is None:
 # PASSO 2: MOTIVO
 if st.session_state.motivo is None:
     st.markdown(f"### 🎯 **Passo 2:** Seu motivo?")
-    motivos = ["Fins acadêmicos", "Viagens e turismo", "Emprego e carreira", "Imigração", "Amigos", "Testes/certificados", "Outro"]
+    motivos = ["Fins acadêmicos", "Viagens e turismo", "Emprego e carreira", "Imigração", "Conversar com Amigos", "Testes/certificados", "Outro"]
     col1, col2, col3 = st.columns(3)
     for i, m in enumerate(motivos):
         col = [col1, col2, col3][i%3]
