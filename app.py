@@ -6,7 +6,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS ESCURO (mantido do anterior)
+# CSS ESCURO (mantido)
 st.markdown("""
 <style>
 section[data-testid="stAppViewContainer"] {background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%) !important;}
@@ -31,6 +31,7 @@ with st.sidebar:
     if st.button("🆕 New Chat", use_container_width=True, type="primary"):
         st.session_state.messages = []
         st.session_state.level = None
+        st.session_state.motivo = None
         st.rerun()
 
 # Inicializa session_state
@@ -38,61 +39,86 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "level" not in st.session_state:
     st.session_state.level = None
+if "motivo" not in st.session_state:
+    st.session_state.motivo = None
 
-# SELEÇÃO DE NÍVEL - BLOQUEIA CHAT ATÉ ESCOLHER
+# PASSO 1: ESCOLHER NÍVEL
 if st.session_state.level is None:
-    st.markdown("### 👋 Escolha seu nível de Inglês para começar!")
-    
+    st.markdown("### 👋 **Passo 1:** Escolha seu nível de Inglês!")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🥚 **Pré-iniciante (A1)**", use_container_width=True, type="secondary"):
+        if st.button("🥚 **Pré-iniciante (A1)**", use_container_width=True):
             st.session_state.level = "A1"
             st.rerun()
-        if st.button("🚀 **Iniciante (A2)**", use_container_width=True, type="secondary"):
+        if st.button("🚀 **Iniciante (A2)**", use_container_width=True):
             st.session_state.level = "A2"
             st.rerun()
     with col2:
-        if st.button("⭐ **Intermediário (B1-B2)**", use_container_width=True, type="primary"):
+        if st.button("⭐ **Intermediário (B1-B2)**", use_container_width=True):
             st.session_state.level = "B1-B2"
             st.rerun()
-        if st.button("🔥 **Avançado (C1-C2)**", use_container_width=True, type="primary"):
+        if st.button("🔥 **Avançado (C1-C2)**", use_container_width=True):
             st.session_state.level = "C1-C2"
             st.rerun()
-    
-    st.info("💡 Clique no seu nível! Alex vai adaptar frases, vocabulário e correções.")
-    st.stop()  # Para aqui até escolher
+    st.stop()
 
-# Prompt adaptado por nível
+# PASSO 2: ESCOLHER MOTIVO
+if st.session_state.motivo is None:
+    st.markdown(f"### 🎯 **Passo 2:** Qual seu principal motivo para aprender inglês?")
+    motivos = [
+        "Fins acadêmicos, universidade e educação",
+        "Viagens e turismo",
+        "Emprego e carreira",
+        "Imigração e vida no exterior",
+        "Melhorar comunicação com amigos",
+        "Testes e certificados de idiomas",
+        "Outro"
+    ]
+    col1, col2, col3 = st.columns(3)
+    cols = [col1, col2, col3]
+    for i, motivo in enumerate(motivos):
+        with cols[i % 3]:
+            if st.button(f"📌 **{motivo[:30]}...**", use_container_width=True):
+                st.session_state.motivo = motivo
+                st.rerun()
+    st.stop()
+
+# MOSTRA CONFIGURAÇÕES
+st.sidebar.success(f"✅ **Nível:** {st.session_state.level}")
+st.sidebar.success(f"🎯 **Motivo:** {st.session_state.motivo}")
+
+# Prompt adaptado: NÍVEL + MOTIVO
 level_prompts = {
-    "A1": "Use ONLY basic words (hello, eat, go). 1-word answers. Correct gently: 'Good! Say \"hello\".'",
-    "A2": "Simple sentences (I like...). 1-2 short sentences. Correct 1 error: 'Nice! Use \"go\" not \"goes\".'",
-    "B1-B2": "Medium vocab (movies, gym, love). 2 sentences. Vary incentives: 'Tell more?', 'Good job!'",
-    "C1-C2": "Advanced topics (relationships, plot twists). Complex grammar. Challenge: 'Why that tense? Explain.'"
+    "A1": "Use ONLY basic words related to {motivo}. 1-word answers.",
+    "A2": "Simple sentences about {motivo}. Correct 1 basic error.",
+    "B1-B2": "Medium sentences focused on {motivo}. Vary topics inside it.",
+    "C1-C2": "Advanced discussion ONLY on {motivo}. Challenge vocabulary/grammar."
 }
 
+motivo_key = st.session_state.motivo.lower().replace(" ", "_").replace(",", "").replace("é", "e")
 prompt_system = f"""
-Você é Alex, tutor inglês gentil para brasileiros no nível {st.session_state.level}.
-{level_prompts[st.session_state.level]}
-- Corrige APENAS 1 erro gramatical/vocab.
+Você é Alex, tutor inglês gentil para brasileiros.
+Nível: {st.session_state.level} - {level_prompts[st.session_state.level].format(motivo=st.session_state.motivo)}
+FALE APENAS SOBRE '{st.session_state.motivo}' - conecte TODAS respostas a este tema.
+- Corrige APENAS 1 erro gramatical/vocab por resposta.
 - Inglês adaptado ao nível, 1-2 frases curtas.
-- Incentive VARIADO: "Try again?", "What else?", "Tell me more?", "Good job! Next?", "Practice that?".
-- SEM emojis, português ou repetição.
+- Incentive: "Try again?", "What else about {motivo_key}?", "Tell me more!", "Good job! Next?", "Practice that?".
+- SEM emojis, português, repetição ou sair do tema.
+Ex: User (Viagens A1): "hotel". Alex: "Good! Hotel is place to sleep. What color?"
 """
 
-st.sidebar.success(f"✅ Nível: **{st.session_state.level}**")
-
-# Chat normal (após nível escolhido)
+# Chat liberado
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).markdown(msg["content"])
 
-if user_input := st.chat_input("Digite sua frase em inglês!"):
+if user_input := st.chat_input("Fale sobre seu motivo em inglês!"):
     st.session_state.messages.append({"role": "user", "content": user_input})
     st.chat_message("user").markdown(user_input)
     
     full_prompt = prompt_system + f"\nUser: {user_input}\nAlex: "
     
     with st.chat_message("assistant"):
-        with st.spinner("Alex respondendo..."):
+        with st.spinner("Alex focando no seu motivo..."):
             resp = model.generate_content(full_prompt).text
             st.markdown(resp)
     st.session_state.messages.append({"role": "assistant", "content": resp})
